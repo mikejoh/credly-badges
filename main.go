@@ -21,6 +21,11 @@ var (
 	username string
 )
 
+type Badge struct {
+	ImageSrc string
+	Alt      string
+}
+
 func main() {
 	flag.StringVar(&username, "username", "", "Credly username")
 	flag.Parse()
@@ -65,21 +70,28 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var badges []Badge
+
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "div" {
 			for _, a := range n.Attr {
 				if a.Key == "class" && a.Val == "cr-standard-grid-item-content c-badge c-badge--medium" {
+					var badge Badge
 					for c := n.FirstChild; c != nil; c = c.NextSibling {
 						if c.Type == html.ElementNode && c.Data == "img" {
+							fmt.Printf("img tag: %+v\n", c) // print the img tag
 							for _, a := range c.Attr {
 								if a.Key == "src" {
-									fmt.Println(a.Val)
-									break
+									badge.ImageSrc = a.Val
+								}
+								if a.Key == "alt" {
+									badge.Alt = a.Val
 								}
 							}
 						}
 					}
+					badges = append(badges, badge)
 					break
 				}
 			}
@@ -89,4 +101,37 @@ func main() {
 		}
 	}
 	f(doc)
+
+	data, err := ioutil.ReadFile("README.md")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert to string
+	content := string(data)
+
+	// Find the start and end of the section
+	startTag := "<!--START_SECTION:badges-->"
+	endTag := "<!--END_SECTION:badges-->"
+	startIdx := strings.Index(content, startTag)
+	endIdx := strings.Index(content, endTag)
+
+	if startIdx == -1 || endIdx == -1 {
+		log.Fatal("Cannot find start or end tag in README")
+	}
+
+	// Generate the badges markdown
+	badgesMarkdown := ""
+	for _, badge := range badges {
+		badgesMarkdown += fmt.Sprintf("![%s](%s)\n", badge.Alt, badge.ImageSrc)
+	}
+
+	// Insert the badges markdown into the README content
+	newContent := content[:startIdx+len(startTag)] + "\n" + badgesMarkdown + content[endIdx:]
+
+	// Write the new content back to the README file
+	err = ioutil.WriteFile("README.md", []byte(newContent), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
