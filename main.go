@@ -107,10 +107,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Convert to string
 	content := string(data)
 
-	// Find the start and end of the section
 	startTag := "<!--START_SECTION:badges-->"
 	endTag := "<!--END_SECTION:badges-->"
 	startIdx := strings.Index(content, startTag)
@@ -120,17 +118,14 @@ func main() {
 		log.Fatal("Cannot find start or end tag in README")
 	}
 
-	// Generate the badges markdown
 	badgesMarkdown := ""
 	for _, badge := range badges {
 		badgesMarkdown += fmt.Sprintf("![%s](%s)\n", badge.Alt, badge.ImageSrc)
 	}
 
-	// Insert the badges markdown into the README content
 	newContent := content[:startIdx+len(startTag)] + "\n" + badgesMarkdown + content[endIdx:]
 
-	// Write the new content back to the README file
-	err = ioutil.WriteFile("README.md", []byte(newContent), 0644)
+	err = ioutil.WriteFile("README.md", []byte(newContent), 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
