@@ -1,0 +1,13 @@
+name: "Credly"
+author: Mikael Johansson
+description: "Add Credly badges to your README."
+
+inputs:
+  CREDLY_USER:
+    description: "User name used in Credly"
+    default: ${{ github.actor }}
+    required: false
+  
+runs:
+  using: "docker"
+  image: "Dockerfile"
