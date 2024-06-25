@@ -102,31 +102,5 @@ func main() {
 	}
 	f(doc)
 
-	data, err := ioutil.ReadFile("README.md")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	content := string(data)
-
-	startTag := "<!--START_SECTION:badges-->"
-	endTag := "<!--END_SECTION:badges-->"
-	startIdx := strings.Index(content, startTag)
-	endIdx := strings.Index(content, endTag)
-
-	if startIdx == -1 || endIdx == -1 {
-		log.Fatal("Cannot find start or end tag in README")
-	}
-
-	badgesMarkdown := ""
-	for _, badge := range badges {
-		badgesMarkdown += fmt.Sprintf("![%s](%s)\n", badge.Alt, badge.ImageSrc)
-	}
-
-	newContent := content[:startIdx+len(startTag)] + "\n" + badgesMarkdown + content[endIdx:]
-
-	err = ioutil.WriteFile("README.md", []byte(newContent), 0600)
-	if err != nil {
-		log.Fatal(err)
-	}
+  fmt.Println(badges)
 }
