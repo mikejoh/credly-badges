@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-const BaseURL = "https://www.credly.com/"
+const credlyBaseURL = "https://www.credly.com/"
 
 var (
 	username      string
@@ -82,7 +82,7 @@ func main() {
 	// Adjust endIndex to point to the end of the <!--END_BADGES:badges--> tag
 	endIndex += len("<!--END_BADGES:badges-->")
 
-	urlString := BaseURL + "users/" + username + "/badges"
+	urlString := credlyBaseURL + "users/" + username + "/badges"
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
