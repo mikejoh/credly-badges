@@ -1,17 +1,17 @@
-name: 'Credly Badges'
-author: 'mikejoh'
-description: 'Add Credly badges to your README.'
+name: "Credly Badges"
+description: "Add Credly badges to your README."
+author: "mikejoh"
 
 inputs:
   CREDLY_USERNAME:
-    description: 'Credly username'
+    description: "Credly username"
     default: ${{ github.actor }}
     required: false
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: "docker"
+  image: "Dockerfile"
 
 branding:
-  icon: 'award'
-  color: 'green'
+  icon: "award"
+  color: "green"
