@@ -48,9 +48,9 @@ func main() {
 			log.Fatal("GitHub token is not provided. Please provide it as a command-line argument or set the GITHUB_TOKEN environment variable.")
 		}
 	}
-	ghUser := os.Getenv("INPUT_GITHUB_USER")
+	ghUser := os.Getenv("GITHUB_ACTOR")
 	if ghUser == "" {
-		log.Fatal("GITHUB_USER environment variable is not set.")
+		log.Fatal("GITHUB_ACTOR environment variable is not set.")
 	}
 
 	ghClient := github.NewClient(nil).WithAuthToken(ghToken)
