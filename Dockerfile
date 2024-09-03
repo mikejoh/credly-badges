@@ -6,4 +6,4 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o credly-badges .
 RUN chmod +x ./credly-badges
 RUN mv ./credly-badges /usr/local/bin/
 
-ENTRYPOINT ["./credly-badges"]
+ENTRYPOINT ["credly-badges"]
