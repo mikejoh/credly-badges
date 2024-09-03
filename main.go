@@ -19,9 +19,10 @@ import (
 const credlyBaseURL = "https://www.credly.com/"
 
 var (
-	username      string
-	ghToken       string
-	commitMessage string
+	credlyUsername string
+	ghToken        string
+	ghUsername     string
+	commitMessage  string
 )
 
 type Badge struct {
@@ -30,14 +31,15 @@ type Badge struct {
 }
 
 func main() {
-	flag.StringVar(&username, "username", "", "Credly username")
+	flag.StringVar(&credlyUsername, "credly-username", "", "Credly username")
 	flag.StringVar(&ghToken, "gh-token", "", "GitHub token")
+	flag.StringVar(&ghUsername, "gh-username", "", "GitHub username")
 	flag.StringVar(&commitMessage, "commit-message", "Update Credly badges!", "Commit message")
 	flag.Parse()
 
-	if username == "" {
-		username = os.Getenv("INPUT_CREDLY_USERNAME")
-		if username == "" {
+	if credlyUsername == "" {
+		credlyUsername = os.Getenv("INPUT_CREDLY_USERNAME")
+		if credlyUsername == "" {
 			log.Fatal("Username is not provided. Please provide it as a command-line argument or set the CREDLY_USERNAME environment variable.")
 		}
 	}
@@ -48,9 +50,12 @@ func main() {
 			log.Fatal("GitHub token is not provided. Please provide it as a command-line argument or set the GITHUB_TOKEN environment variable.")
 		}
 	}
-	ghUser := os.Getenv("GITHUB_ACTOR")
-	if ghUser == "" {
-		log.Fatal("GITHUB_ACTOR environment variable is not set.")
+
+	if ghUsername == "" {
+		ghUsername = os.Getenv("GITHUB_ACTOR")
+		if ghUsername == "" {
+			log.Fatal("GitHub username is not provided. Please provide it as a command-line argument or set the GITHUB_USERNAME environment variable.")
+		}
 	}
 
 	ghClient := github.NewClient(nil).WithAuthToken(ghToken)
@@ -58,7 +63,7 @@ func main() {
 	ctx := context.Background()
 
 	// TODO: This only works on personal GitHub spaces. Fix so that we can get the README from any repository
-	content, _, _, err := ghClient.Repositories.GetContents(ctx, ghUser, ghUser, "README.md", nil)
+	content, _, _, err := ghClient.Repositories.GetContents(ctx, ghUsername, ghUsername, "README.md", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,7 +87,7 @@ func main() {
 	// Adjust endIndex to point to the end of the <!--END_BADGES:badges--> tag
 	endIndex += len("<!--END_BADGES:badges-->")
 
-	urlString := credlyBaseURL + "users/" + username + "/badges"
+	urlString := credlyBaseURL + "users/" + credlyUsername + "/badges"
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		log.Fatal(err)
@@ -152,7 +157,7 @@ func main() {
 
 	readme = readme[:startIndex] + "<!--START_BADGES:badges-->\n" + badgeMarkdown.String() + "<!--END_BADGES:badges-->" + readme[endIndex:]
 
-	_, _, err = ghClient.Repositories.UpdateFile(ctx, ghUser, ghUser, "README.md", &github.RepositoryContentFileOptions{
+	_, _, err = ghClient.Repositories.UpdateFile(ctx, ghUsername, ghUsername, "README.md", &github.RepositoryContentFileOptions{
 		Branch:  github.String("main"),
 		Message: github.String(commitMessage),
 		Committer: &github.CommitAuthor{
@@ -169,4 +174,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("Badges updated successfully!")
 }

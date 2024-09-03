@@ -34,9 +34,9 @@ jobs:
       - name: Update
         uses: mikejoh/credly-badges@main
         with:
-          CREDLY_USERNAME: <Your credly user name>
+          CREDLY_USERNAME: <Your Credly username>
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: "Update credly badges!"
+          COMMIT_MESSAGE: "Update Credly badges!"
 ```
 If you want to try it out, without waiting for the trigger to be scheduled, you can add another trigger e.g.:
 ```
@@ -47,6 +47,15 @@ on:
 ```
 And push a commit to your profile repository, in the `Actions` tab of your repository you shall now see that it has triggered.
 
-## Todo
+## Test locally
 
-* Add a pre-check to determine if an update of the README file is needed.
+1. Build:
+```
+go build -o credly-badges .
+```
+2. Create a GitHub token.
+3. Run:
+```
+export INPUT_GITHUB_TOKEN="token"
+./credly-badges -credly-username <username> -gh-username <GitHub username> -gh-token $INPUT_GITHUB_TOKEN
+```
