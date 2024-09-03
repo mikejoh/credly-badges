@@ -45,7 +45,7 @@ on:
   push:
 ...
 ```
-And push a commit to your profile repository, in the `Actions` tab of your repository you shall now that it has triggered.
+And push a commit to your profile repository, in the `Actions` tab of your repository you shall now see that it has triggered.
 
 ## Todo
 
