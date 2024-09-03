@@ -36,19 +36,19 @@ func main() {
 	flag.Parse()
 
 	if username == "" {
-		username = os.Getenv("CREDLY_USERNAME")
+		username = os.Getenv("INPUT_CREDLY_USERNAME")
 		if username == "" {
 			log.Fatal("Username is not provided. Please provide it as a command-line argument or set the CREDLY_USERNAME environment variable.")
 		}
 	}
 
 	if ghToken == "" {
-		ghToken = os.Getenv("GITHUB_TOKEN")
+		ghToken = os.Getenv("INPUT_GITHUB_TOKEN")
 		if ghToken == "" {
 			log.Fatal("GitHub token is not provided. Please provide it as a command-line argument or set the GITHUB_TOKEN environment variable.")
 		}
 	}
-	ghUser := os.Getenv("GITHUB_USER")
+	ghUser := os.Getenv("INPUT_GITHUB_USER")
 	if ghUser == "" {
 		log.Fatal("GITHUB_USER environment variable is not set.")
 	}
