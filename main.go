@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -16,7 +17,15 @@ import (
 	"golang.org/x/net/html"
 )
 
-const credlyBaseURL = "https://www.credly.com/"
+const (
+	credlyBaseURL = "https://www.credly.com/"
+	readmeFile    = "README.md"
+	badgeStart    = "<!--START_BADGES:badges-->"
+	badgeEnd      = "<!--END_BADGES:badges-->"
+	defaultBranch = "main"
+)
+
+var ErrFilesAreEqual = errors.New("files are equal")
 
 var (
 	credlyUsername string
@@ -63,7 +72,7 @@ func main() {
 	ctx := context.Background()
 
 	// TODO: This only works on personal GitHub spaces. Fix so that we can get the README from any repository
-	content, _, _, err := ghClient.Repositories.GetContents(ctx, ghUsername, ghUsername, "README.md", nil)
+	content, _, _, err := ghClient.Repositories.GetContents(ctx, ghUsername, ghUsername, readmeFile, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,50 +82,79 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Find the badges section in the README.md
-	startIndex := strings.Index(readme, "<!--START_BADGES:badges-->")
-	if startIndex == -1 {
-		log.Fatal("START_BADGES section not found in README.md")
-	}
-
-	endIndex := strings.Index(readme, "<!--END_BADGES:badges-->")
-	if endIndex == -1 {
-		log.Fatal("END_BADGES section not found in README.md")
-	}
-
-	// Adjust endIndex to point to the end of the <!--END_BADGES:badges--> tag
-	endIndex += len("<!--END_BADGES:badges-->")
-
-	urlString := credlyBaseURL + "users/" + credlyUsername + "/badges"
-	parsedURL, err := url.Parse(urlString)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	req, err := http.NewRequest(http.MethodGet, parsedURL.String(), http.NoBody)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	req = req.WithContext(ctx)
-
-	resp, err := http.DefaultClient.Do(req)
+	body, err := fetchCredlyUserPage(ctx, credlyUsername)
 	if err != nil {
 		log.Fatal(err)
-	}
-	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	}
+
+	badges, err := extractBadges(body)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	doc, err := html.Parse(strings.NewReader(string(body)))
+	readme, err = updateReadme(readme, badges)
+	if err != nil {
+		if errors.Is(err, ErrFilesAreEqual) {
+			log.Printf("No changes between the fetched %s and the updated detected. Exiting...", readmeFile)
+			return
+		}
+		log.Fatal(err)
+	}
+
+	// Commit the changes
+	_, _, err = ghClient.Repositories.UpdateFile(ctx, ghUsername, ghUsername, readmeFile, &github.RepositoryContentFileOptions{
+		Branch:  github.String(defaultBranch),
+		Message: github.String(commitMessage),
+		Committer: &github.CommitAuthor{
+			Name:  github.String("github-actions[bot]"),
+			Email: github.String("41898282+github-actions[bot]@users.noreply.github.com"),
+		},
+		Author: &github.CommitAuthor{
+			Name:  github.String("github-actions[bot]"),
+			Email: github.String("41898282+github-actions[bot]@users.noreply.github.com"),
+		},
+		Content: []byte(readme),
+		SHA:     content.SHA,
+	})
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	log.Printf("Credly badges in %s updated successfully!", readmeFile)
+}
+
+// updateReadme updates the README.md file with the provided badges
+func updateReadme(readme string, badges []Badge) (string, error) {
+	originalReadme := readme
+
+	var badgeMarkdown strings.Builder
+	for _, badge := range badges {
+		badgeMarkdown.WriteString(fmt.Sprintf("<img src=\"%s\" alt=\"%s\" />\n", badge.ImageSrc, badge.Alt))
+	}
+
+	startIndex, endIndex, err := findStartAndEndIndex(readme)
+	if err != nil {
+		return "", err
+	}
+
+	readme = readme[:startIndex] + badgeStart + "\n" + badgeMarkdown.String() + badgeEnd + readme[endIndex:]
+
+	if originalReadme == readme {
+		return originalReadme, ErrFilesAreEqual
+	}
+
+	return readme, nil
+}
+
+// extractBadges extracts the badges from the provided Credly user page
+func extractBadges(b []byte) ([]Badge, error) {
+	doc, err := html.Parse(strings.NewReader(string(b)))
+	if err != nil {
+		return nil, err
 	}
 
 	var badges []Badge
@@ -150,30 +188,52 @@ func main() {
 	}
 	f(doc)
 
-	var badgeMarkdown strings.Builder
-	for _, badge := range badges {
-		badgeMarkdown.WriteString(fmt.Sprintf("<img src=\"%s\" alt=\"%s\" />\n", badge.ImageSrc, badge.Alt))
+	return badges, nil
+}
+
+// findStartAndEndIndex finds the start and end index of the badges section in the README.md
+func findStartAndEndIndex(readme string) (start, end int, err error) {
+	startIndex := strings.Index(readme, badgeStart)
+	if startIndex == -1 {
+		return 0, 0, fmt.Errorf("%s not found in %s", badgeStart, readmeFile)
 	}
 
-	readme = readme[:startIndex] + "<!--START_BADGES:badges-->\n" + badgeMarkdown.String() + "<!--END_BADGES:badges-->" + readme[endIndex:]
+	endIndex := strings.Index(readme, badgeEnd)
+	if endIndex == -1 {
+		return 0, 0, fmt.Errorf("%s section not found in %s", badgeEnd, readmeFile)
+	}
 
-	_, _, err = ghClient.Repositories.UpdateFile(ctx, ghUsername, ghUsername, "README.md", &github.RepositoryContentFileOptions{
-		Branch:  github.String("main"),
-		Message: github.String(commitMessage),
-		Committer: &github.CommitAuthor{
-			Name:  github.String("github-actions[bot]"),
-			Email: github.String("41898282+github-actions[bot]@users.noreply.github.com"),
-		},
-		Author: &github.CommitAuthor{
-			Name:  github.String("github-actions[bot]"),
-			Email: github.String("41898282+github-actions[bot]@users.noreply.github.com"),
-		},
-		Content: []byte(readme),
-		SHA:     content.SHA,
-	})
+	endIndex += len(badgeEnd)
+
+	return startIndex, endIndex, nil
+}
+
+// fetchCredlyUserPage fetches the Credly user page for the provided username
+func fetchCredlyUserPage(ctx context.Context, username string) ([]byte, error) {
+	urlString := credlyBaseURL + "users/" + username + "/badges"
+
+	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	log.Println("Badges updated successfully!")
+	req, err := http.NewRequest(http.MethodGet, parsedURL.String(), http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req = req.WithContext(ctx)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }
