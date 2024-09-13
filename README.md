@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: "Update Credly badges!"
 ```
-_Note that you might want to replace `@main` and pin to a specific version, see the [Releases](https://github.com/mikejoh/credly-badges/releases) page for available released versions.
+_Note that you might want to replace `@main` and pin to a specific version, see the [Releases](https://github.com/mikejoh/credly-badges/releases) page for available released versions._
 
 If you want to try it out, without waiting for the trigger to be scheduled, you can add another trigger e.g.:
 ```
