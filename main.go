@@ -230,6 +230,10 @@ func fetchCredlyUserPage(ctx context.Context, username string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("failed to fetch Credly user (%s) page: %s", username, resp.Status)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
