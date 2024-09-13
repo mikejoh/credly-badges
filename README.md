@@ -10,7 +10,7 @@ _Note that this GitHub action only supports fetching badges from Credly._
 
 ## How-to
 
-1. Add the following in your `github.com/<owner>/<repo>/README.md` add the following:
+1. Add the following to your `github.com/<owner>/<repo>/README.md` add the following:
 ```
 <!--START_BADGES:badges-->
 <!--END_BADGES:badges-->
