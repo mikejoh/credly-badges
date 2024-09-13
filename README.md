@@ -1,5 +1,7 @@
 # credly-badges
 
+[![goreleaser](https://github.com/mikejoh/credly-badges/actions/workflows/goreleaser.yml/badge.svg)](https://github.com/mikejoh/credly-badges/actions/workflows/goreleaser.yml)
+
 A GitHub action to display your [Credly](https://info.credly.com/) badges in your personal GitHub profile README!
 
 Inspired by this [repo](https://github.com/pemtajo/badge-readme).
