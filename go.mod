@@ -2,7 +2,7 @@ module github.com/mikejoh/go-credly
 
 go 1.22.4
 
-require golang.org/x/net v0.33.0
+require golang.org/x/net v0.35.0
 
 require (
 	github.com/google/go-github/v64 v64.0.0
